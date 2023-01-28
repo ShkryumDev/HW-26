@@ -42,7 +42,6 @@ jobs:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           password: ${{ secrets.SSH_PASSWORD }}
-          # Переходим в директорию, запускаем sudo команду docker-compose up
           script: |
             cd hw26
             echo ${{ secrets.SSH_PASSWORD }} | sudo -S docker-compose up -d
