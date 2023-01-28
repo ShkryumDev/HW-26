@@ -14,3 +14,35 @@ jobs:
           run: echo ${{ secrets.DOCKERHUB_TOKEN }} | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
         - name: docker push
           run: docker push 46hhadam46/hw_26:$GITHUB_REF_NAME-$GITHUB_RUN_ID
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build_and_push
+    steps:
+      - name: clone code
+        uses: actions/checkout@v2
+      - name: render configs
+        run: |
+          mkdir deploy
+          cat docker-compose.yaml | envsubst > deploy/docker-compose.yaml
+      - name: clone files to server
+        uses: appleboy/scp-action@master
+        with:
+          # Эти значения надо вписать в секреты гитхаба
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          # Указываем, какие файлы копировать
+          source: "deploy/docker-compose.yaml"
+          # Место на виртуальной машине, куда скопируются файлы
+          target: "hw26"
+          strip_components: 1
+      - name: run docker-compose
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          # Переходим в директорию и запускаем через sudo команду docker-compose up
+          script: |
+            cd hw26
+            echo ${{ secrets.SSH_PASSWORD }} | sudo -S docker-compose up -d
